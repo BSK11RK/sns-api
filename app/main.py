@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app import models, schemas, auth
 from app.database import SessionLocal, engine
@@ -44,10 +45,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     
     if not user or not auth.verify_password(form_data.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
-        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
         
     access_token = auth.create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -82,10 +80,63 @@ def create_post(
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
-    return db_post
+    return {
+        **db_post.__dict__,
+        "likes_count": 0
+    }
 
 
 # 投稿一覧
 @app.get("/posts", response_model=list[schemas.PostResponse])
 def get_posts(db: Session = Depends(get_db)):
-    return db.query(models.Post).all()
+    posts =  db.query(models.Post).all()
+    
+    result = []
+    for post in posts:
+        likes_count = db.query(func.count(models.Like.id)).filter(models.Like.post_id == post.id).scalar()
+        
+        result.append({
+            "id": post.id,
+            "user": post.user,
+            "content": post.content,
+            "likes_count": likes_count
+        })
+    return result
+
+
+# いいね追加
+@app.post("/posts/{post_id}/like")
+def like_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    like = models.Like(user_id=current_user.id, post_id=post_id)
+    
+    try:
+        db.add(like)
+        db.commit()
+    except:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Already liked")
+    return {"message": "Liked"}
+
+
+# いいね削除
+@app.delete("/posts/{post_id}/like")
+def unlike_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    like = db.query(models.Like).filter(
+        models.Like.user_id == current_user.id,
+        models.Like.post_id == post_id
+    ).first()
+    
+    if not like:
+        raise HTTPException(status_code=404, detail="Like not found")
+    
+    db.delete(like)
+    db.commit()
+    return {"message": "Unliked"}

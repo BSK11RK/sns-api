@@ -31,6 +31,7 @@ class PostResponse(BaseModel):
     id: int
     user: UserResponse
     content: str
+    likes_count: int
     
     class Config:
         from_attributes = True
