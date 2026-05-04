@@ -13,6 +13,20 @@ class User(Base):
 
     posts = relationship("Post", back_populates="user")
     likes = relationship("Like", back_populates="user")
+    
+    # フォローしている側
+    following = relationship(
+        "Follow",
+        foreign_keys="Follow.follower_id",
+        back_populates="follower"
+    )
+    
+    # フォローされている側
+    followers = relationship(
+        "Follow",
+        foreign_keys="Follow.following_id",
+        back_populates="following_user"
+    )
 
 
 class Post(Base):
@@ -40,4 +54,29 @@ class Like(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "post_id", name="unique_like"),
+    )
+    
+
+class Follow(Base):
+    __tablename__ = "follows"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    follower_id = Column(Integer, ForeignKey("users.id"))
+    following_id = Column(Integer, ForeignKey("users.id"))
+    
+    follower = relationship(
+        "User",
+        foreign_keys=[follower_id],
+        back_populates="following"
+    )
+    
+    following_user = relationship(
+        "User",
+        foreign_keys=[following_id],
+        back_populates="followers"
+    )
+    
+    __table_args__ = (
+        UniqueConstraint("follower_id", "following_id", name="unique_follow"),
     )

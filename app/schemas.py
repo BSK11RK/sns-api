@@ -15,6 +15,10 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
         
+        
+class UserListResponse(BaseModel):
+    users: list[UserResponse]
+        
 
 # Auth
 class Token(BaseModel):
