@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -18,7 +18,7 @@ def get_db():
         
         
 # 投稿作成
-@router.post("/posts", response_model=schemas.PostResponse, tags=["Posts"])
+@router.post("/posts", response_model=schemas.PostResponse)
 def create_post(
     post: schemas.PostCreate,
     db: Session = Depends(get_db),
@@ -38,10 +38,16 @@ def create_post(
     }
     
     
-# 投稿一覧
-@router.get("/posts", response_model=list[schemas.PostResponse], tags=["Posts"])
-def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
+# 投稿一覧（ページネーション対応）
+@router.get("/posts", response_model=list[schemas.PostResponse])
+def get_posts(
+    db: Session = Depends(get_db),
+    limit: int = Query(10, le=100),
+    offset: int = Query(0, ge=0)
+):
+    posts = db.query(models.Post) \
+        .order_by(models.Post.created_at.desc()) \
+        .limit(limit).offset(offset).all()
 
     result = []
     for post in posts:
@@ -53,7 +59,48 @@ def get_posts(db: Session = Depends(get_db)):
             "id": post.id,
             "user": post.user,
             "content": post.content,
+            "created_at": post.created_at,
             "likes_count": likes_count
         })
+    return result
 
+
+# タイムライン（ページネーション対応）
+@router.get("/timeline", response_model=list[schemas.PostResponse])
+def get_timeline(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    limit: int = Query(10, le=100),
+    offset: int = Query(0, ge=0)
+):
+    # フォローしているユーザーID取得
+    follows = db.query(models.Follow).filter(
+        models.Follow.follower_id == current_user.id
+    ).all()
+    
+    following_ids = [f.following_id for f in follows]
+    
+    # 自分も含める
+    following_ids.append(current_user.id)
+    
+    # 投稿取得（新しい順）
+    posts = db.query(models.Post) \
+        .filter(models.Post.user_id.in_(following_ids)) \
+        .order_by(models.Post.created_at.desc()) \
+        .limit(limit).offset(offset).all()
+    
+    # いいね数付きで返す
+    result = []
+    for post in posts:
+        likes = db.query(func.count(models.Like.id)).filter(
+            models.Like.post_id == post.id
+        ).scalar()
+        
+        result.append({
+            "id": post.id,
+            "content": post.content,
+            "created_at": post.created_at,  
+            "user": post.user,
+            "likes_count": likes
+        })
     return result

@@ -1,5 +1,6 @@
 # APIの入出力
 from pydantic import BaseModel
+from datetime import datetime
 
 
 # ユーザー
@@ -34,6 +35,7 @@ class PostCreate(BaseModel):
 class PostResponse(BaseModel):
     id: int
     user: UserResponse
+    created_at: datetime
     content: str
     likes_count: int
     
