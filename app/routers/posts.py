@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -36,6 +36,62 @@ def create_post(
         **db_post.__dict__,
         "likes_count": 0
     }
+    
+    
+# 投稿更新
+@router.put("/posts/{post_id}", response_model=schemas.PostResponse)
+def update_post(
+    post_id: int,
+    post: schemas.PostUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # 自分の投稿かチェック
+    if db_post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    db_post.content = post.content
+    
+    db.commit()
+    db.refresh(db_post)
+    
+    likes = db.query(func.count(models.Like.id)).filter(
+        models.Like.post_id == db_post.id
+    ).scalar()
+    
+    return {
+        "id": db_post.id,
+        "content": db_post.content,
+        "created_at": db_post.created_at,
+        "user": db_post.user,
+        "likes_count": likes
+    }
+
+
+# 投稿削除
+@router.delete("/posts/{post_id}")
+def delete_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # 自分の投稿かチェック
+    if db_post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    db.delete(db_post)
+    db.commit()
+    return {"message": "Deleted"}
     
     
 # 投稿一覧（ページネーション対応）

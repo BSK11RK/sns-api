@@ -32,11 +32,15 @@ class PostCreate(BaseModel):
     content: str
     
     
+class PostUpdate(BaseModel):
+    content: str
+    
+    
 class PostResponse(BaseModel):
     id: int
-    user: UserResponse
-    created_at: datetime
     content: str
+    created_at: datetime
+    user: UserResponse
     likes_count: int
     
     class Config:
