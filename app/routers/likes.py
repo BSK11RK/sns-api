@@ -17,7 +17,7 @@ def get_db():
         
 
 # いいね追加
-@router.post("/posts/{post_id}/like", tags=["Likes"])
+@router.post("/posts/{post_id}/like", summary="いいね追加")
 def like_post(
     post_id: int,
     db: Session = Depends(get_db),
@@ -36,7 +36,7 @@ def like_post(
 
 
 # いいね削除
-@router.delete("/posts/{post_id}/like", tags=["Likes"])
+@router.delete("/posts/{post_id}/like", summary="いいね削除")
 def unlike_post(
     post_id: int,
     db: Session = Depends(get_db),

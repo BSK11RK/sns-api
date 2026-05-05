@@ -16,7 +16,7 @@ def get_db():
         
         
 # ユーザー登録
-@router.post("/users", response_model=schemas.UserResponse, tags=["Users"])
+@router.post("/users", response_model=schemas.UserResponse, summary="ユーザー登録")
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     hashed = auth.hash_password(user.password)
 

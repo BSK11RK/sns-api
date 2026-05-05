@@ -15,87 +15,10 @@ def get_db():
         yield db
     finally:
         db.close()
-        
-        
-# 投稿作成
-@router.post("/posts", response_model=schemas.PostResponse)
-def create_post(
-    post: schemas.PostCreate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    db_post = models.Post(
-        content=post.content,
-        user_id=current_user.id
-    )
-    db.add(db_post)
-    db.commit()
-    db.refresh(db_post)
-
-    return {
-        **db_post.__dict__,
-        "likes_count": 0
-    }
-    
-    
-# 投稿更新
-@router.put("/posts/{post_id}", response_model=schemas.PostResponse)
-def update_post(
-    post_id: int,
-    post: schemas.PostUpdate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    
-    if not db_post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    # 自分の投稿かチェック
-    if db_post.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    db_post.content = post.content
-    
-    db.commit()
-    db.refresh(db_post)
-    
-    likes = db.query(func.count(models.Like.id)).filter(
-        models.Like.post_id == db_post.id
-    ).scalar()
-    
-    return {
-        "id": db_post.id,
-        "content": db_post.content,
-        "created_at": db_post.created_at,
-        "user": db_post.user,
-        "likes_count": likes
-    }
 
 
-# 投稿削除
-@router.delete("/posts/{post_id}")
-def delete_post(
-    post_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    
-    if not db_post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    # 自分の投稿かチェック
-    if db_post.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    db.delete(db_post)
-    db.commit()
-    return {"message": "Deleted"}
-    
-    
 # 投稿一覧（ページネーション対応）
-@router.get("/posts", response_model=list[schemas.PostResponse])
+@router.get("/posts", response_model=list[schemas.PostResponse], summary="投稿一覧取得")
 def get_posts(
     db: Session = Depends(get_db),
     limit: int = Query(10, le=100),
@@ -122,7 +45,7 @@ def get_posts(
 
 
 # タイムライン（ページネーション対応）
-@router.get("/timeline", response_model=list[schemas.PostResponse])
+@router.get("/timeline", response_model=list[schemas.PostResponse], summary="タイムライン取得")
 def get_timeline(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -160,3 +83,80 @@ def get_timeline(
             "likes_count": likes
         })
     return result
+
+        
+# 投稿作成
+@router.post("/posts", response_model=schemas.PostResponse, summary="投稿作成")
+def create_post(
+    post: schemas.PostCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_post = models.Post(
+        content=post.content,
+        user_id=current_user.id
+    )
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+
+    return {
+        **db_post.__dict__,
+        "likes_count": 0
+    }
+    
+    
+# 投稿更新
+@router.put("/posts/{post_id}", response_model=schemas.PostResponse, summary="投稿更新")
+def update_post(
+    post_id: int,
+    post: schemas.PostUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # 自分の投稿かチェック
+    if db_post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    db_post.content = post.content
+    
+    db.commit()
+    db.refresh(db_post)
+    
+    likes = db.query(func.count(models.Like.id)).filter(
+        models.Like.post_id == db_post.id
+    ).scalar()
+    
+    return {
+        "id": db_post.id,
+        "content": db_post.content,
+        "created_at": db_post.created_at,
+        "user": db_post.user,
+        "likes_count": likes
+    }
+
+
+# 投稿削除
+@router.delete("/posts/{post_id}", summary="投稿削除")
+def delete_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # 自分の投稿かチェック
+    if db_post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    db.delete(db_post)
+    db.commit()
+    return {"message": "Deleted"}

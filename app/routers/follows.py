@@ -17,7 +17,7 @@ def get_db():
 
 
 # フォロー一覧
-@router.get("/users/me/following", response_model=schemas.UserListResponse)
+@router.get("/users/me/following", response_model=schemas.UserListResponse, summary="フォロー一覧")
 def following(
     db: Session = Depends(get_db), 
     me: models.User = Depends(get_current_user)
@@ -29,7 +29,7 @@ def following(
 
 
 # フォロワー一覧
-@router.get("/users/me/followers", response_model=schemas.UserListResponse)
+@router.get("/users/me/followers", response_model=schemas.UserListResponse, summary="フォロワー一覧")
 def followers(
     db: Session = Depends(get_db), 
     me: models.User = Depends(get_current_user)
@@ -41,7 +41,7 @@ def followers(
        
         
 # フォロー
-@router.post("/users/{user_id}/follow")
+@router.post("/users/{user_id}/follow", summary="フォロー")
 def follow(
     user_id: int, 
     db: Session = Depends(get_db), 
@@ -63,7 +63,7 @@ def follow(
 
 
 # アンフォロー
-@router.delete("/users/{user_id}/follow")
+@router.delete("/users/{user_id}/follow", summary="アンフォロー")
 def unfollow(
     user_id: int, 
     db: Session = Depends(get_db), 
