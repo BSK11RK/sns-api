@@ -101,7 +101,10 @@ def create_post(
     db.refresh(db_post)
 
     return {
-        **db_post.__dict__,
+        "id": db_post.id,
+        "content": db_post.content,
+        "created_at": db_post.created_at,
+        "user": db_post.user,
         "likes_count": 0
     }
     
