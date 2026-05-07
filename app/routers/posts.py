@@ -17,22 +17,28 @@ def get_db():
         db.close()
 
 
-# 投稿一覧（ページネーション対応）
+# 投稿一覧（ページネーション対応）+ 検索
 @router.get("/posts", response_model=list[schemas.PostResponse], summary="投稿一覧取得")
 def get_posts(
     db: Session = Depends(get_db),
+    keyword: str | None = Query(None, description="投稿内容を部分一致検索"),
     limit: int = Query(10, le=100),
     offset: int = Query(0, ge=0)
 ):
-    posts = db.query(models.Post) \
-        .order_by(models.Post.created_at.desc()) \
-        .limit(limit).offset(offset).all()
+    query = db.query(models.Post)
+    
+    # 検索
+    if keyword:
+        query = query.filter(models.Post.content.contains(keyword))
+    
+    posts = query.order_by(models.Post.created_at.desc()
+            ).limit(limit).offset(offset).all()
 
     result = []
     for post in posts:
-        likes_count = db.query(func.count(models.Like.id))\
-            .filter(models.Like.post_id == post.id)\
-            .scalar()
+        likes = db.query(func.count(models.Like.id)).filter(
+            models.Like.post_id == post.id
+        ).scalar()
 
         result.append({
             "id": post.id,
@@ -40,7 +46,7 @@ def get_posts(
             "content": post.content,
             "created_at": post.created_at,
             "updated_at": post.updated_at,
-            "likes_count": likes_count
+            "likes_count": likes
         })
     return result
 
