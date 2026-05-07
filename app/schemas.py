@@ -1,12 +1,12 @@
 # APIの入出力
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
 # ユーザー
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=3, max_length=20)
+    password: str = Field(..., min_length=6, max_length=100)
     
     
 class UserResponse(BaseModel):
@@ -29,11 +29,11 @@ class Token(BaseModel):
 
 # 投稿
 class PostCreate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=200)
     
     
 class PostUpdate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=200)
     
     
 class PostResponse(BaseModel):
