@@ -1,9 +1,16 @@
 # DBテーブル
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from app.database import Base
+
+
+# 日本時間（JST）
+JST = timezone(timedelta(hours=9))
+
+def now_jst():
+    return datetime.now(JST)
 
 
 class User(Base):
@@ -37,7 +44,18 @@ class Post(Base):
     id = Column(Integer, primary_key=True, index=True)
     content = Column(String, index=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # 日本時間で保存
+    created_at = Column(
+        DateTime(timezone=True), 
+        default=now_jst
+    )
+
+    # 更新時自動更新
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=now_jst,
+        onupdate=now_jst
+    )
 
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="posts")
@@ -82,5 +100,9 @@ class Follow(Base):
     )
     
     __table_args__ = (
-        UniqueConstraint("follower_id", "following_id", name="unique_follow"),
+        UniqueConstraint(
+            "follower_id", 
+            "following_id", 
+            name="unique_follow"
+        ),
     )

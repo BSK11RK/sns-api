@@ -39,6 +39,7 @@ def get_posts(
             "user": post.user,
             "content": post.content,
             "created_at": post.created_at,
+            "updated_at": post.updated_at,
             "likes_count": likes_count
         })
     return result
@@ -79,6 +80,7 @@ def get_timeline(
             "id": post.id,
             "content": post.content,
             "created_at": post.created_at,  
+            "updated_at": post.updated_at,
             "user": post.user,
             "likes_count": likes
         })
@@ -104,6 +106,7 @@ def create_post(
         "id": db_post.id,
         "content": db_post.content,
         "created_at": db_post.created_at,
+        "updated_at": db_post.updated_at,
         "user": db_post.user,
         "likes_count": 0
     }
@@ -139,6 +142,7 @@ def update_post(
         "id": db_post.id,
         "content": db_post.content,
         "created_at": db_post.created_at,
+        "updated_at": db_post.updated_at,
         "user": db_post.user,
         "likes_count": likes
     }

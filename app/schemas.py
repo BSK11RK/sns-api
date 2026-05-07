@@ -40,6 +40,7 @@ class PostResponse(BaseModel):
     id: int
     content: str
     created_at: datetime
+    updated_at: datetime
     user: UserResponse
     likes_count: int
     
